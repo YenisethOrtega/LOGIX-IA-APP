@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOGIX-AI | Logistics Intelligence & Quality Excellence Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+      colors: {
+        brand: { DEFAULT: '#FF69B4', 50: '#FFF1F8', 100: '#FFE0F0', 200: '#FFC2E1', 400: '#FF85C2', 500: '#FF69B4', 600: '#E5509C', 700: '#C23B83' },
+        plomo: { DEFAULT: '#5B6670', 50: '#F6F7F8', 100: '#ECEEF0', 200: '#D7DBDF', 400: '#8B959E', 600: '#5B6670', 800: '#363E45', 900: '#22282D' },
+        coral: { DEFAULT: '#FF6B6B', 50: '#FFF1F1', 100: '#FFE0E0', 600: '#E64F4F' }
+      }
+    } }
+  }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  html, body { background: #fff; }
+  body { font-family: 'Inter', system-ui, sans-serif; color: #363E45; -webkit-font-smoothing: antialiased; }
+  .card { background: #fff; border: 1px solid #ECEEF0; border-radius: 1rem; box-shadow: 0 1px 2px rgba(34,40,45,.04), 0 8px 24px -12px rgba(34,40,45,.10); }
+  .nav-btn { display: flex; align-items: center; gap: .75rem; width: 100%; padding: .7rem .9rem; border-radius: .75rem; font-weight: 500; font-size: .9rem; color: #5B6670; transition: all .2s; text-align: left; }
+  .nav-btn:hover { background: #FFF1F8; color: #C23B83; }
+  .nav-btn.active { background: linear-gradient(135deg, #FF69B4, #FF85C2); color: #fff; box-shadow: 0 8px 20px -8px rgba(255,105,180,.7); }
+  .view { display: none; animation: fade .35s ease; }
+  .view.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px; background: #ECEEF0; outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #FF69B4; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(255,105,180,.6); cursor: pointer; }
+  input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #FF69B4; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(255,105,180,.6); cursor: pointer; }
+  .field { width: 100%; border: 1px solid #D7DBDF; border-radius: .65rem; padding: .6rem .8rem; font-size: .95rem; transition: all .15s; background: #fff; }
+  .field:focus { outline: none; border-color: #FF69B4; box-shadow: 0 0 0 4px rgba(255,105,180,.15); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .65rem 1.1rem; border-radius: .75rem; font-weight: 600; font-size: .875rem; transition: all .2s; cursor: pointer; }
+  .btn-primary { background: linear-gradient(135deg, #FF69B4, #FF85C2); color: #fff; box-shadow: 0 8px 18px -8px rgba(255,105,180,.8); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 22px -8px rgba(255,105,180,.9); }
+  .btn-ghost { background: #fff; color: #5B6670; border: 1px solid #D7DBDF; }
+  .btn-ghost:hover { border-color: #FF69B4; color: #C23B83; background: #FFF1F8; }
+  .pill { display: inline-flex; align-items: center; padding: .15rem .6rem; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+  .type-card { border: 1.5px solid #ECEEF0; border-radius: .9rem; padding: 1rem; cursor: pointer; transition: all .2s; text-align: left; background: #fff; }
+  .type-card:hover { border-color: #FF85C2; }
+  .type-card.active { border-color: #FF69B4; background: #FFF1F8; box-shadow: 0 8px 20px -12px rgba(255,105,180,.8); }
+  .step { transition: all .3s; }
+  .step.running { border-color: #FF69B4; background: #FFF1F8; }
+  .step.done { border-color: #FFC2E1; }
+  .spinner { width: 18px; height: 18px; border: 2.5px solid #FFC2E1; border-top-color: #FF69B4; border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .term { background: #22282D; color: #D7DBDF; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; border-radius: .9rem; padding: 1rem; height: 190px; overflow-y: auto; }
+  .term .ok { color: #FF85C2; } .term .warn { color: #FFB26B; } .term .err { color: #FF6B6B; }
+  #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 60; transform: translateY(20px); opacity: 0; pointer-events: none; transition: all .3s; }
+  #toast.show { transform: none; opacity: 1; }
+  .report-doc h2 { font-size: 1.05rem; font-weight: 700; color: #22282D; margin: 1.75rem 0 .6rem; padding-bottom: .4rem; border-bottom: 2px solid #FFC2E1; }
+  .report-doc p { line-height: 1.7; font-size: .93rem; color: #363E45; margin-bottom: .6rem; }
+  .report-doc table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+  .report-doc th { text-align: left; background: #F6F7F8; color: #5B6670; font-weight: 600; padding: .5rem .6rem; }
+  .report-doc td { padding: .5rem .6rem; border-bottom: 1px solid #ECEEF0; vertical-align: top; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-thumb { background: #D7DBDF; border-radius: 99px; }
+  @media print {
+    @page { margin: 14mm; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    aside, #mobilebar, #toast, .no-print { display: none !important; }
+    main { margin: 0 !important; padding: 0 !important; }
+    .view { display: none !important; }
+    #view-report { display: block !important; }
+    .card { box-shadow: none !important; border: none !important; }
+    .report-doc h2 { break-after: avoid; } .report-doc table, .report-doc tr { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Barra móvil -->
+<div id="mobilebar" class="lg:hidden sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-plomo-100 flex items-center justify-between px-4 py-3">
+  <div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg bg-brand text-white grid place-items-center font-extrabold text-sm">L</div><span class="font-extrabold tracking-tight text-plomo-900">LOGIX<span class="text-brand">-AI</span></span></div>
+  <button id="menuBtn" class="p-2 rounded-lg border border-plomo-200" aria-label="Menú"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+</div>
+<div id="backdrop" class="fixed inset-0 bg-plomo-900/30 z-40 hidden lg:hidden"></div>
+
+<!-- Sidebar -->
+<aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-plomo-100 p-5 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-300">
+  <div class="flex items-center gap-3 mb-1">
+    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand to-brand-400 text-white grid place-items-center font-extrabold text-xl shadow-lg" style="box-shadow:0 10px 24px -10px rgba(255,105,180,.9)">L</div>
+    <div><div class="text-xl font-extrabold tracking-tight text-plomo-900 leading-none">LOGIX<span class="text-brand">-AI</span></div>
+    <div class="text-[10px] uppercase tracking-widest text-plomo-400 mt-1">Intelligence &amp; Quality Hub</div></div>
+  </div>
+  <p class="text-[11px] text-plomo-400 mt-3 mb-6 leading-snug">Logistics Intelligence &amp; Quality Excellence Hub</p>
+  <nav class="space-y-1.5 flex-1" id="nav"></nav>
+  <div class="card p-4 mt-4 bg-brand-50 border-brand-100">
+    <div class="text-[11px] uppercase tracking-wider text-brand-700 font-semibold">Estado de la cadena</div>
+    <div class="flex items-center gap-2 mt-2"><span id="sideDot" class="w-2.5 h-2.5 rounded-full bg-brand"></span><span id="sideStatus" class="text-sm font-semibold text-plomo-800">—</span></div>
+    <div class="text-xs text-plomo-600 mt-1" id="sideScore"></div>
+  </div>
+</aside>
+
+<main class="lg:ml-72 px-4 sm:px-8 py-6 lg:py-8 max-w-[1500px]">
+
+  <!-- 1. DASHBOARD -->
+  <section id="view-dashboard" class="view">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+      <div>
+        <div class="text-xs font-semibold text-brand-600 uppercase tracking-widest">Resumen ejecutivo</div>
+        <h1 class="text-3xl font-extrabold tracking-tight text-plomo-900">Panel de control logístico</h1>
+        <p class="text-plomo-600 text-sm mt-1">Evaluación integral de calidad y productividad · <span id="dashType" class="font-semibold text-plomo-800"></span></p>
+      </div>
+      <div class="flex gap-2 no-print">
+        <button class="btn btn-ghost" data-go="inputs">Editar datos</button>
+        <button class="btn btn-primary" data-go="report">Ver informe</button>
+      </div>
+    </div>
+    <div id="kpiGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-5"></div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+      <div class="card p-6">
+        <h3 class="font-bold text-plomo-900">Salud general de la cadena</h3>
+        <p class="text-xs text-plomo-400 mb-2">Índice ponderado vs. referencia del sector</p>
+        <div class="relative h-44 mt-2"><canvas id="chGauge"></canvas>
+          <div class="absolute inset-x-0 bottom-1 text-center"><div id="gaugeScore" class="text-4xl font-extrabold text-plomo-900 leading-none"></div><div id="gaugeLabel" class="text-xs font-semibold mt-1"></div></div>
+        </div>
+        <div id="gaugeNote" class="text-xs text-plomo-600 mt-4 leading-relaxed"></div>
+      </div>
+      <div class="card p-6 lg:col-span-2">
+        <h3 class="font-bold text-plomo-900">Tendencia 12 meses</h3>
+        <p class="text-xs text-plomo-400 mb-2">OTIF (%) y tasa de errores (%)</p>
+        <div class="h-60"><canvas id="chTrend"></canvas></div>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div class="card p-6">
+        <h3 class="font-bold text-plomo-900">Origen de las desviaciones</h3>
+        <p class="text-xs text-plomo-400 mb-2">Peso por categoría de causa raíz</p>
+        <div class="h-56"><canvas id="chCauses"></canvas></div>
+      </div>
+      <div class="card p-6">
+        <h3 class="font-bold text-plomo-900">Alcance vs. referencia por KPI</h3>
+        <p class="text-xs text-plomo-400 mb-2">100% = cumple la meta del sector</p>
+        <div class="h-56"><canvas id="chAtt"></canvas></div>
+      </div>
+      <div class="card p-6">
+        <h3 class="font-bold text-plomo-900">Alertas prioritarias</h3>
+        <p class="text-xs text-plomo-400 mb-3">Desviaciones que requieren atención</p>
+        <div id="alertList" class="space-y-2.5"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. INPUTS -->
+  <section id="view-inputs" class="view">
+    <div class="mb-6">
+      <div class="text-xs font-semibold text-brand-600 uppercase tracking-widest">Módulo de datos</div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-plomo-900">Datos de entrada</h1>
+      <p class="text-plomo-600 text-sm mt-1">Selecciona el tipo de empresa e ingresa tus métricas operativas, o carga un caso de ejemplo.</p>
+    </div>
+    <div class="card p-6 mb-5">
+      <h3 class="font-bold text-plomo-900 mb-3">1 · Tipo de empresa</h3>
+      <div id="typeCards" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+    </div>
+    <div class="card p-6 mb-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h3 class="font-bold text-plomo-900">2 · Métricas operativas y de calidad</h3>
+        <div class="flex flex-wrap gap-2">
+          <button id="btnSample" class="btn btn-primary">Cargar datos de prueba de ejemplo</button>
+          <button id="btnRandom" class="btn btn-ghost">Simular variación</button>
+          <button id="btnBench" class="btn btn-ghost">Usar referencia del sector</button>
+        </div>
+      </div>
+      <div id="fieldsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+    </div>
+    <div class="card p-5 flex flex-wrap items-center justify-between gap-4 bg-brand-50 border-brand-100">
+      <div><div class="text-xs uppercase tracking-wider text-brand-700 font-semibold">Vista previa en vivo</div>
+        <div class="text-sm text-plomo-800 mt-1">Índice de desempeño: <b id="prevScore" class="text-lg"></b> · <span id="prevStatus" class="font-semibold"></span></div></div>
+      <button class="btn btn-primary" data-go="engine">Analizar con el Motor de IA →</button>
+    </div>
+  </section>
+
+  <!-- 3. MOTOR IA -->
+  <section id="view-engine" class="view">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+      <div>
+        <div class="text-xs font-semibold text-brand-600 uppercase tracking-widest">Inteligencia analítica</div>
+        <h1 class="text-3xl font-extrabold tracking-tight text-plomo-900">Motor de IA y procesamiento</h1>
+        <p class="text-plomo-600 text-sm mt-1">Detección de desviaciones, cuellos de botella y clasificación de causa raíz.</p>
+      </div>
+      <button id="btnRun" class="btn btn-primary">▶ Ejecutar análisis</button>
+    </div>
+    <div id="pipeline" class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-5"></div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+      <div class="lg:col-span-1"><div class="term" id="term"></div></div>
+      <div class="card p-6 lg:col-span-1"><h3 class="font-bold text-plomo-900">Perfil de desempeño</h3><p class="text-xs text-plomo-400 mb-2">Actual vs. referencia (=100)</p><div class="h-56"><canvas id="chRadar"></canvas></div></div>
+      <div class="card p-6 lg:col-span-1"><h3 class="font-bold text-plomo-900">Cuellos de botella</h3><p class="text-xs text-plomo-400 mb-2">Utilización estimada por etapa (%)</p><div class="h-56"><canvas id="chStages"></canvas></div></div>
+    </div>
+    <div id="engineResults" class="hidden">
+      <div class="card p-6 mb-5">
+        <h3 class="font-bold text-plomo-900 mb-1">Clasificación de causa raíz</h3>
+        <p class="text-xs text-plomo-400 mb-4">Ordenado por severidad de la desviación</p>
+        <div class="overflow-x-auto"><table class="w-full text-sm" id="rcaTable"></table></div>
+      </div>
+      <div class="card p-6">
+        <h3 class="font-bold text-plomo-900 mb-3">Hallazgos de la IA</h3>
+        <ul id="insights" class="space-y-2.5 text-sm text-plomo-800"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. WHAT-IF -->
+  <section id="view-sim" class="view">
+    <div class="mb-6">
+      <div class="text-xs font-semibold text-brand-600 uppercase tracking-widest">Simulación predictiva</div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-plomo-900">Simulador What-If</h1>
+      <p class="text-plomo-600 text-sm mt-1">Mueve los controles y observa el impacto proyectado en tiempo real.</p>
+    </div>
+    <div class="grid grid-cols-1 xl:grid-cols-5 gap-5">
+      <div class="card p-6 xl:col-span-2">
+        <div class="flex flex-wrap gap-2 mb-5">
+          <button class="btn btn-ghost !py-1.5 !text-xs" data-preset="lean">Lean &amp; tecnología</button>
+          <button class="btn btn-ghost !py-1.5 !text-xs" data-preset="resil">Resiliencia</button>
+          <button class="btn btn-ghost !py-1.5 !text-xs" data-preset="cut">Recorte de costos</button>
+          <button class="btn btn-ghost !py-1.5 !text-xs" data-preset="reset">Restablecer</button>
+        </div>
+        <div id="sliders" class="space-y-6"></div>
+      </div>
+      <div class="xl:col-span-3 space-y-5">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="card p-5"><div class="text-xs text-plomo-400 font-semibold uppercase tracking-wider">Índice actual</div><div id="simBase" class="text-3xl font-extrabold text-plomo-800 mt-1"></div></div>
+          <div class="card p-5 border-brand-200" style="background:#FFF8FC"><div class="text-xs text-brand-700 font-semibold uppercase tracking-wider">Índice proyectado</div><div class="flex items-end gap-2"><div id="simProj" class="text-3xl font-extrabold text-brand-600 mt-1"></div><div id="simDelta" class="text-sm font-bold mb-1"></div></div></div>
+          <div class="card p-5"><div class="text-xs text-plomo-400 font-semibold uppercase tracking-wider">Ahorro anual est.</div><div id="simSave" class="text-2xl font-extrabold mt-1"></div><div class="text-[11px] text-plomo-400" id="simSaveNote"></div></div>
+        </div>
+        <div id="simCards" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+        <div class="card p-6"><h3 class="font-bold text-plomo-900">Alcance por KPI: base vs. proyectado</h3><p class="text-xs text-plomo-400 mb-2">% respecto a la referencia del sector</p><div class="h-72"><canvas id="chSim"></canvas></div></div>
+        <p class="text-[11px] text-plomo-400">Modelo heurístico demostrativo: las elasticidades son supuestos de referencia y deben calibrarse con datos históricos de cada empresa.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. INFORME -->
+  <section id="view-report" class="view">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-6 no-print">
+      <div>
+        <div class="text-xs font-semibold text-brand-600 uppercase tracking-widest">Reporte gerencial</div>
+        <h1 class="text-3xl font-extrabold tracking-tight text-plomo-900">Informe ejecutivo automatizado</h1>
+      </div>
+      <button id="btnPrint" class="btn btn-primary">Exportar / Imprimir informe</button>
+    </div>
+    <article class="card p-8 sm:p-12 max-w-4xl report-doc" id="reportDoc"></article>
+  </section>
+
+</main>
+<div id="toast" class="card px-4 py-3 text-sm font-medium text-plomo-800 border-brand-200"></div>
+
+<script>
+/* ============== ÍCONOS ============== */
+const ICONS = {
+  home: "M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25",
+  inputs: "M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75",
+  cpu: "M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6.75v10.5a2.25 2.25 0 002.25 2.25zm.75-12h9v9h-9v-9z",
+  sim: "M6 13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 9.75V10.5",
+  doc: "M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z",
+  check: "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+  warn: "M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z",
+  cycle: "M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99",
+  dollar: "M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+  users: "M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
+};
+const icon = (n, c = 'w-5 h-5') => `<svg class="${c}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="${ICONS[n]}"/></svg>`;
+
+/* ============== DATOS Y MODELO ============== */
+const TYPES = {
+  'Manufactura': { desc: 'Producción, abastecimiento de planta y despacho a clientes.', emoji: '🏭' },
+  'Retail': { desc: 'Tiendas y e-commerce con alta rotación de SKUs.', emoji: '🛍️' },
+  'Distribución': { desc: 'Almacenes, cross-docking y transporte de última milla.', emoji: '🚚' }
+};
+const BENCH = {
+  'Manufactura':  { orders: 0, otif: 92, error: 1.5, turns: 8,  cost: 14,  prod: 22, lead: 12, absent: 3,   damage: 0.8, safety: 10 },
+  'Retail':       { orders: 0, otif: 95, error: 1.0, turns: 10, cost: 6.5, prod: 45, lead: 7,  absent: 4,   damage: 0.6, safety: 6 },
+  'Distribución': { orders: 0, otif: 96, error: 0.8, turns: 12, cost: 9,   prod: 38, lead: 5,  absent: 3.5, damage: 0.5, safety: 5 }
+};
+const SAMPLES = {
+  'Manufactura':  { orders: 18500, otif: 84.2, error: 2.9, turns: 5.6,  cost: 17.8, prod: 17.5, lead: 15.5, absent: 5.8, damage: 1.4, safety: 7 },
+  'Retail':       { orders: 64000, otif: 90.1, error: 1.9, turns: 7.4,  cost: 8.3,  prod: 36,   lead: 9.5,  absent: 6.2, damage: 1.1, safety: 4 },
+  'Distribución': { orders: 42000, otif: 91.5, error: 1.5, turns: 9.1,  cost: 11.4, prod: 30,   lead: 6.8,  absent: 5.1, damage: 0.9, safety: 4 }
+};
+/* KPIs evaluados: hib = "mayor es mejor", w = peso, cat = categoría de causa raíz */
+const KPIS = [
+  { k: 'otif',   label: 'OTIF',                    unit: '%',      hib: true,  w: .25, cat: 'Proveedores y transporte', short: 'OTIF' },
+  { k: 'error',  label: 'Tasa de errores',         unit: '%',      hib: false, w: .15, cat: 'Procesos y calidad',       short: 'Errores' },
+  { k: 'turns',  label: 'Rotación de inventario',  unit: 'x/año',  hib: true,  w: .12, cat: 'Inventario',               short: 'Rotación' },
+  { k: 'cost',   label: 'Costo por orden',         unit: 'USD',    hib: false, w: .15, cat: 'Procesos y calidad',       short: 'Costo' },
+  { k: 'prod',   label: 'Productividad',           unit: 'líneas/h', hib: true, w: .15, cat: 'Tecnología y layout',     short: 'Product.' },
+  { k: 'lead',   label: 'Lead time',               unit: 'días',   hib: false, w: .08, cat: 'Proveedores y transporte', short: 'Lead time' },
+  { k: 'absent', label: 'Ausentismo',              unit: '%',      hib: false, w: .05, cat: 'Personas',                 short: 'Ausent.' },
+  { k: 'damage', label: 'Daños / devoluciones',    unit: '%',      hib: false, w: .05, cat: 'Procesos y calidad',       short: 'Daños' }
+];
+const FIELDS = [
+  { k: 'orders', label: 'Órdenes por mes', unit: 'órdenes', step: 100 },
+  { k: 'otif',   label: 'OTIF (a tiempo y completas)', unit: '%', step: 0.1 },
+  { k: 'error',  label: 'Tasa de errores (picking/despacho)', unit: '%', step: 0.1 },
+  { k: 'turns',  label: 'Rotación de inventario', unit: 'veces/año', step: 0.1 },
+  { k: 'cost',   label: 'Costo por orden', unit: 'USD', step: 0.1 },
+  { k: 'prod',   label: 'Productividad de personal', unit: 'líneas/persona-hora', step: 0.5 },
+  { k: 'lead',   label: 'Lead time promedio', unit: 'días', step: 0.1 },
+  { k: 'absent', label: 'Ausentismo', unit: '%', step: 0.1 },
+  { k: 'damage', label: 'Daños / devoluciones', unit: '%', step: 0.1 },
+  { k: 'safety', label: 'Stock de seguridad', unit: 'días de cobertura', step: 0.5 }
+];
+const CAUSES = {
+  otif:   (d, b) => d.lead > b.lead * 1.1 ? 'Proveedores y transporte: lead time alto y baja confiabilidad de entrega' : 'Planificación de demanda: quiebres por stock de seguridad insuficiente',
+  error:  (d, b) => d.absent > b.absent * 1.15 ? 'Personas: sobrecarga y rotación de personal afectan la precisión' : 'Procesos: ausencia de doble verificación y escaneo en picking/despacho',
+  turns:  () => 'Inventario: sobrestock y SKUs de baja rotación inmovilizando capital',
+  cost:   (d, b) => d.prod < b.prod * 0.9 ? 'Procesos: baja eficiencia operativa eleva el costo unitario' : 'Transporte: rutas no optimizadas y tarifas por encima de mercado',
+  prod:   () => 'Tecnología y layout: slotting deficiente y poca automatización de picking',
+  lead:   () => 'Proveedores: variabilidad de tránsito y rutas poco directas',
+  absent: () => 'Personas: clima laboral, turnos y carga de trabajo',
+  damage: () => 'Manejo y embalaje: estándares de estiba y protección insuficientes'
+};
+const ACTIONS = {
+  otif:   ['Implementar S&OP semanal entre ventas, compras y logística', 'Firmar SLAs con scorecard a proveedores y transportistas', 'Reponer stock de seguridad en SKUs clase A'],
+  error:  ['Doble verificación por escaneo en picking y despacho', 'Estandarizar puestos (SOP) y reforzar capacitación', 'Auditoría de calidad por muestreo diario con feedback'],
+  turns:  ['Clasificación ABC/XYZ y liquidación de SKUs obsoletos', 'Recalcular puntos de reorden con demanda real', 'Evaluar consignación o VMI con proveedores clave'],
+  cost:   ['Optimizar rutas y consolidar cargas', 'Renegociar tarifas de transporte con licitación', 'Mapear la cadena de valor y eliminar desperdicios (Lean)'],
+  prod:   ['Rediseñar layout y slotting por velocidad de rotación', 'Incorporar RF/pick-to-light y WMS', 'Balancear turnos y entrenamiento cruzado'],
+  lead:   ['Segmentar proveedores y desarrollar alternos locales', 'Habilitar cross-docking y rutas directas', 'Implementar visibilidad y tracking en tiempo real'],
+  absent: ['Plan de bienestar y rotación equilibrada de turnos', 'Crear pool de personal flexible', 'Incentivos por asistencia y desempeño'],
+  damage: ['Revisar embalaje y estándares de estiba', 'Capacitar en manejo de carga', 'Seguimiento de daños por transportista y ruta']
+};
+
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const fmt = (n, d = 1) => Number(n).toLocaleString('es', { minimumFractionDigits: d, maximumFractionDigits: d });
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+let state = { type: 'Manufactura', data: { ...SAMPLES['Manufactura'] }, ran: false };
+let sim = { safety: 0, route: 0, staff: 0, auto: 0, supplier: 0 };
+
+function statusOf(s) {
+  if (s >= 85) return { t: 'Excelente', c: '#FF69B4' };
+  if (s >= 70) return { t: 'Estable', c: '#FF85C2' };
+  if (s >= 55) return { t: 'Requiere atención', c: '#F59E0B' };
+  return { t: 'Crítico', c: '#FF6B6B' };
+}
+const SEV_STYLE = {
+  'Crítico': 'background:#FFE0E0;color:#E64F4F', 'Alto': 'background:#FFE9D6;color:#D9731C',
+  'Medio': 'background:#FEF3C7;color:#B7791F', 'En meta': 'background:#FFE0F0;color:#C23B83'
+};
+const attOf = (f, v, bv, cap = true) => {
+  const a = v <= 0 ? (f.hib ? 0 : 100) : (f.hib ? v / bv * 100 : bv / v * 100);
+  return cap ? Math.min(100, a) : a;
+};
+
+function analyze(d, type) {
+  const b = BENCH[type];
+  const rows = KPIS.map(f => {
+    const v = +d[f.k] || 0, bv = b[f.k];
+    const dev = f.hib ? (v - bv) / bv * 100 : (bv - v) / bv * 100;
+    const sev = dev < -25 ? 'Crítico' : dev < -10 ? 'Alto' : dev < -3 ? 'Medio' : 'En meta';
+    return { ...f, value: v, bench: bv, dev, sev, att: attOf(f, v, bv), cause: CAUSES[f.k](d, b) };
+  });
+  const score = rows.reduce((a, r) => a + r.att * r.w, 0);
+  const R = Object.fromEntries(rows.map(r => [r.k, r]));
+  const bad = k => Math.max(0, -R[k].dev);
+  const cats = {};
+  rows.forEach(r => { cats[r.cat] = (cats[r.cat] || 0) + bad(r.k) * r.w; });
+  const u = (base, x) => clamp(base + x, 30, 99);
+  const stages = [
+    ['Recepción', u(58, bad('lead') * 0.9)],
+    ['Almacenaje', u(60, bad('turns') * 0.8 + bad('absent') * 0.3)],
+    ['Picking', u(64, bad('error') * 0.5 + bad('prod') * 0.7)],
+    ['Empaque', u(58, bad('damage') * 0.6 + bad('error') * 0.3)],
+    ['Despacho', u(60, bad('otif') * 0.9)],
+    ['Última milla', u(58, bad('cost') * 0.5 + bad('otif') * 0.6 + bad('lead') * 0.3)]
+  ];
+  const bSafe = b.safety;
+  const res = {
+    buffer: Math.min(100, (+d.safety || 0) / bSafe * 100),
+    supply: Math.min(100, b.lead / Math.max(0.1, d.lead) * 100),
+    people: Math.min(100, b.absent / Math.max(0.1, d.absent) * 100),
+    service: Math.min(100, d.otif / b.otif * 100)
+  };
+  res.index = res.buffer * .25 + res.supply * .25 + res.people * .2 + res.service * .3;
+  return { rows, R, score, cats, stages, res, status: statusOf(score), b };
+}
+
+function project(d, s) {
+  const p = { ...d };
+  p.otif = clamp(d.otif + 0.05 * s.safety + 0.12 * s.route + 0.03 * s.staff + 0.06 * s.auto + 0.10 * s.supplier, 0, 99.8);
+  p.error = Math.max(0.05, d.error * (1 - 0.008 * s.auto) * (1 + 0.006 * Math.max(0, -s.staff)) * (1 - 0.002 * Math.max(0, s.staff)) * (1 - 0.003 * s.route));
+  p.turns = Math.max(0.5, d.turns * (1 - 0.005 * s.safety) * (1 + 0.004 * s.supplier) * (1 + 0.002 * s.route));
+  p.lead = Math.max(1, d.lead * (1 - 0.008 * s.supplier - 0.004 * s.route));
+  p.safety = Math.max(0, d.safety * (1 + s.safety / 100));
+  p.cost = Math.max(0.5, d.cost * (1 + 0.0015 * s.safety + 0.004 * s.staff - 0.0035 * s.route - 0.001 * s.auto - 0.001 * s.supplier));
+  p.prod = Math.max(1, d.prod * (1 - 0.003 * s.staff + 0.006 * s.auto + 0.002 * s.route));
+  p.absent = Math.max(0.2, d.absent * (1 + 0.004 * Math.max(0, -s.staff) - 0.001 * s.auto));
+  p.damage = Math.max(0.05, d.damage * (1 - 0.004 * s.auto) * (1 - 0.002 * s.route));
+  return p;
+}
+
+/* ============== UTILIDADES UI ============== */
+const charts = {};
+function mk(id, cfg) {
+  if (charts[id]) charts[id].destroy();
+  const el = document.getElementById(id);
+  if (!el) return;
+  charts[id] = new Chart(el, cfg);
+}
+Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+Chart.defaults.color = '#5B6670';
+const PINK = '#FF69B4', PINK_L = '#FFC2E1', PLOMO = '#5B6670', PLOMO_L = '#D7DBDF', CORAL = '#FF6B6B';
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2800);
+}
+function seeded(i, seed) { const x = Math.sin(i * 12.9898 + seed * 78.233) * 43758.5453; return x - Math.floor(x); }
+
+/* ============== NAVEGACIÓN ============== */
+const NAV = [
+  ['dashboard', 'Dashboard general', 'home'], ['inputs', 'Datos de entrada', 'inputs'],
+  ['engine', 'Motor de IA', 'cpu'], ['sim', 'Simulador What-If', 'sim'], ['report', 'Informe ejecutivo', 'doc']
+];
+let current = 'dashboard';
+$('#nav').innerHTML = NAV.map(([id, l, ic]) => `<button class="nav-btn" data-view="${id}">${icon(ic)}<span>${l}</span></button>`).join('');
+function showView(id) {
+  current = id;
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + id));
+  $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === id));
+  closeMenu(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  renderCurrent();
+}
+function renderCurrent() {
+  const A = analyze(state.data, state.type);
+  $('#sideStatus').textContent = A.status.t; $('#sideDot').style.background = A.status.c;
+  $('#sideScore').textContent = `Índice ${fmt(A.score, 0)}/100 · ${state.type}`;
+  ({ dashboard: renderDashboard, inputs: updatePreview, engine: renderEngineStatic, sim: renderSim, report: renderReport })[current](A);
+}
+document.addEventListener('click', e => {
+  const nb = e.target.closest('[data-view]'); if (nb) return showView(nb.dataset.view);
+  const go = e.target.closest('[data-go]'); if (go) return showView(go.dataset.go);
+});
+const openMenu = () => { $('#sidebar').classList.remove('-translate-x-full'); $('#backdrop').classList.remove('hidden'); };
+const closeMenu = () => { $('#sidebar').classList.add('-translate-x-full'); $('#backdrop').classList.add('hidden'); };
+$('#menuBtn').onclick = openMenu; $('#backdrop').onclick = closeMenu;
+
+/* ============== 1. DASHBOARD ============== */
+function renderDashboard(A) {
+  $('#dashType').textContent = state.type;
+  const cards = [['otif', 'check'], ['error', 'warn'], ['turns', 'cycle'], ['cost', 'dollar'], ['prod', 'users']];
+  $('#kpiGrid').innerHTML = cards.map(([k, ic]) => {
+    const r = A.R[k], good = r.dev >= -3;
+    const val = k === 'cost' ? '$' + fmt(r.value, 2) : fmt(r.value, k === 'turns' || k === 'prod' ? 1 : 1);
+    const unit = k === 'cost' ? '' : r.unit;
+    return `<div class="card p-5 hover:-translate-y-0.5 transition">
+      <div class="flex items-center justify-between"><div class="w-10 h-10 rounded-xl grid place-items-center" style="background:${good ? '#FFE0F0' : '#FFE0E0'};color:${good ? '#E5509C' : '#E64F4F'}">${icon(ic)}</div>
+      <span class="pill" style="${SEV_STYLE[r.sev]}">${r.sev}</span></div>
+      <div class="text-xs text-plomo-400 font-semibold uppercase tracking-wider mt-4">${r.label}</div>
+      <div class="flex items-baseline gap-1.5 mt-0.5"><span class="text-3xl font-extrabold text-plomo-900">${val}</span><span class="text-xs text-plomo-400">${unit}</span></div>
+      <div class="text-xs mt-2 ${good ? 'text-plomo-600' : 'text-coral-600'}">Ref. sector ${k === 'cost' ? '$' : ''}${fmt(r.bench, 1)} · <b>${r.dev >= 0 ? '▲ ' : '▼ '}${fmt(Math.abs(r.dev), 1)}%</b> ${r.dev >= 0 ? 'mejor' : 'peor'}</div>
+    </div>`;
+  }).join('');
+
+  mk('chGauge', { type: 'doughnut', data: { datasets: [{ data: [A.score, 100 - A.score], backgroundColor: [A.status.c, '#ECEEF0'], borderWidth: 0 }] },
+    options: { rotation: -90, circumference: 180, cutout: '78%', maintainAspectRatio: false, plugins: { tooltip: { enabled: false }, legend: { display: false } } } });
+  $('#gaugeScore').textContent = fmt(A.score, 0); $('#gaugeLabel').textContent = A.status.t; $('#gaugeLabel').style.color = A.status.c;
+  const worst = [...A.rows].sort((a, b) => a.dev - b.dev)[0];
+  $('#gaugeNote').innerHTML = worst.dev < -3
+    ? `Mayor brecha: <b>${worst.label}</b> (${fmt(Math.abs(worst.dev), 1)}% por debajo de la referencia). Resiliencia: <b>${fmt(A.res.index, 0)}/100</b>.`
+    : `Todos los indicadores están en meta. Resiliencia: <b>${fmt(A.res.index, 0)}/100</b>.`;
+
+  const d = state.data, b = A.b, months = [];
+  const now = new Date();
+  for (let i = 11; i >= 0; i--) months.push(new Date(now.getFullYear(), now.getMonth() - i, 1).toLocaleDateString('es', { month: 'short' }));
+  const series = (v, spread, seed) => Array.from({ length: 12 }, (_, i) => i === 11 ? v : v + (seeded(i, seed) - 0.5) * spread * (1 - i / 14));
+  mk('chTrend', { type: 'line', data: { labels: months, datasets: [
+    { label: 'OTIF %', data: series(d.otif, 5, 1).map(x => clamp(x, 0, 100)), borderColor: PINK, backgroundColor: 'rgba(255,105,180,.12)', fill: true, tension: .4, pointRadius: 3, yAxisID: 'y' },
+    { label: 'Errores %', data: series(d.error, d.error * 0.6, 2).map(x => Math.max(0, x)), borderColor: PLOMO, borderDash: [5, 4], tension: .4, pointRadius: 3, yAxisID: 'y1' }
+  ] }, options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } },
+    scales: { y: { grid: { color: '#F1F2F4' }, title: { display: false } }, y1: { position: 'right', grid: { display: false } }, x: { grid: { display: false } } } } });
+
+  const ce = Object.entries(A.cats).filter(e => e[1] > 0.01);
+  if (ce.length) {
+    mk('chCauses', { type: 'doughnut', data: { labels: ce.map(e => e[0]), datasets: [{ data: ce.map(e => +e[1].toFixed(2)), backgroundColor: [PINK, PLOMO, CORAL, PINK_L, PLOMO_L, '#FF9CCB'], borderWidth: 2, borderColor: '#fff' }] },
+      options: { maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 11 } } } } } });
+  } else if (charts.chCauses) { charts.chCauses.destroy(); delete charts.chCauses; }
+
+  mk('chAtt', { type: 'bar', data: { labels: A.rows.map(r => r.short), datasets: [{ data: A.rows.map(r => +r.att.toFixed(1)), backgroundColor: A.rows.map(r => r.att >= 97 ? PINK : r.att >= 85 ? PINK_L : CORAL), borderRadius: 6 }] },
+    options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { max: 100, min: 0, grid: { color: '#F1F2F4' } }, y: { grid: { display: false } } } } });
+
+  const alerts = A.rows.filter(r => r.sev === 'Crítico' || r.sev === 'Alto').sort((a, b) => a.dev - b.dev).slice(0, 4);
+  $('#alertList').innerHTML = alerts.length ? alerts.map(r => `<div class="flex gap-3 p-3 rounded-xl" style="background:${r.sev === 'Crítico' ? '#FFF1F1' : '#FFF7ED'}">
+      <div class="mt-0.5" style="color:${r.sev === 'Crítico' ? '#E64F4F' : '#D9731C'}">${icon('warn', 'w-5 h-5')}</div>
+      <div><div class="text-sm font-semibold text-plomo-900">${r.label} <span class="pill ml-1" style="${SEV_STYLE[r.sev]}">${r.sev}</span></div>
+      <div class="text-xs text-plomo-600 mt-0.5">${fmt(Math.abs(r.dev), 1)}% bajo la referencia. ${r.cause.split(':')[0]}.</div></div></div>`).join('')
+    : `<div class="text-sm text-plomo-600 p-4 rounded-xl bg-brand-50">Sin alertas críticas. La operación se mantiene dentro de los umbrales del sector.</div>`;
+}
+
+/* ============== 2. INPUTS ============== */
+function buildInputs() {
+  $('#typeCards').innerHTML = Object.entries(TYPES).map(([t, o]) => `<button class="type-card ${t === state.type ? 'active' : ''}" data-type="${t}">
+    <div class="text-2xl">${o.emoji}</div><div class="font-bold text-plomo-900 mt-1">${t}</div><div class="text-xs text-plomo-600 mt-1">${o.desc}</div></button>`).join('');
+  $$('.type-card').forEach(c => c.onclick = () => {
+    state.type = c.dataset.type; state.ran = false;
+    $$('.type-card').forEach(x => x.classList.toggle('active', x === c));
+    refreshFieldHints(); updatePreview();
+    toast(`Referencias actualizadas a ${state.type}. Usa "Cargar datos de prueba" para precargar valores típicos.`);
+  });
+  $('#fieldsGrid').innerHTML = FIELDS.map(f => `<div>
+    <label class="block text-xs font-semibold text-plomo-600 mb-1.5" for="f_${f.k}">${f.label}</label>
+    <div class="relative"><input class="field pr-24" type="number" step="${f.step}" min="0" id="f_${f.k}" data-k="${f.k}">
+    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-plomo-400 pointer-events-none">${f.unit}</span></div>
+    <div class="text-[11px] text-plomo-400 mt-1" id="h_${f.k}"></div></div>`).join('');
+  $$('#fieldsGrid input').forEach(i => i.addEventListener('input', () => {
+    const v = parseFloat(i.value); state.data[i.dataset.k] = isNaN(v) ? 0 : Math.max(0, v); state.ran = false; updatePreview();
+  }));
+  syncFields(); refreshFieldHints();
+}
+function syncFields() { FIELDS.forEach(f => { $('#f_' + f.k).value = state.data[f.k]; }); }
+function refreshFieldHints() {
+  const b = BENCH[state.type];
+  FIELDS.forEach(f => { $('#h_' + f.k).textContent = f.k === 'orders' ? 'Volumen mensual de órdenes' : `Referencia ${state.type}: ${fmt(b[f.k], 1)} ${f.unit}`; });
+}
+function updatePreview() {
+  const A = analyze(state.data, state.type);
+  $('#prevScore').textContent = fmt(A.score, 0) + '/100'; $('#prevStatus').textContent = A.status.t; $('#prevStatus').style.color = A.status.c;
+  $('#sideStatus').textContent = A.status.t; $('#sideDot').style.background = A.status.c; $('#sideScore').textContent = `Índice ${fmt(A.score, 0)}/100 · ${state.type}`;
+}
+$('#btnSample').onclick = () => { state.data = { ...SAMPLES[state.type] }; state.ran = false; syncFields(); updatePreview(); toast(`Datos de ejemplo de ${state.type} cargados ✓`); };
+$('#btnBench').onclick = () => { state.data = { ...BENCH[state.type], orders: state.data.orders || SAMPLES[state.type].orders }; state.ran = false; syncFields(); updatePreview(); toast('Valores de referencia del sector aplicados'); };
+$('#btnRandom').onclick = () => {
+  const s = SAMPLES[state.type], seed = Math.random() * 100, out = {};
+  FIELDS.forEach((f, i) => { out[f.k] = +(s[f.k] * (0.8 + seeded(i, seed) * 0.45)).toFixed(f.k === 'orders' ? 0 : 1); });
+  out.otif = Math.min(99.5, out.otif);
+  state.data = out; state.ran = false; syncFields(); updatePreview(); toast('Escenario aleatorio generado');
+};
+
+/* ============== 3. MOTOR IA ============== */
+const STEPS = [
+  { t: 'Ingesta', d: 'Lectura y validación de métricas', log: ['Cargando dataset operativo…', 'Validando rangos y unidades… OK'] },
+  { t: 'Normalización', d: 'Escalado contra referencia del sector', log: ['Obteniendo benchmark del sector…', 'Normalizando 8 KPIs a escala 0-100…'] },
+  { t: 'Detección', d: 'Desviaciones y anomalías', log: ['Calculando z-score de desviación…', 'Clasificando severidad por umbrales…'] },
+  { t: 'Causa raíz', d: 'Clasificación por reglas 6M', log: ['Cruzando KPIs correlacionados…', 'Asignando causa raíz probable…'] },
+  { t: 'Recomendación', d: 'Priorización de acciones', log: ['Ordenando por impacto en el índice…', 'Generando plan de acción… OK'] }
+];
+function drawPipeline(stateArr) {
+  $('#pipeline').innerHTML = STEPS.map((s, i) => {
+    const st = stateArr[i];
+    const ic = st === 'done' ? `<span class="text-brand-600">${icon('check', 'w-5 h-5')}</span>` : st === 'running' ? '<div class="spinner"></div>' : `<span class="w-5 h-5 rounded-full border-2 border-plomo-200 inline-block"></span>`;
+    return `<div class="step card p-4 ${st}"><div class="flex items-center justify-between mb-2"><span class="text-[11px] font-bold text-plomo-400">PASO ${i + 1}</span>${ic}</div><div class="font-bold text-plomo-900 text-sm">${s.t}</div><div class="text-xs text-plomo-600 mt-0.5">${s.d}</div></div>`;
+  }).join('');
+}
+function log(msg, cls = '') { const t = $('#term'); t.insertAdjacentHTML('beforeend', `<div class="${cls}">› ${msg}</div>`); t.scrollTop = t.scrollHeight; }
+let running = false;
+function renderEngineStatic() {
+  const A = analyze(state.data, state.type);
+  if (state.ran) { drawPipeline(STEPS.map(() => 'done')); showEngineResults(A); }
+  else { drawPipeline(STEPS.map(() => 'pending')); $('#term').innerHTML = '<div style="color:#8B959E">› Motor en espera. Pulsa "Ejecutar análisis"…</div>'; $('#engineResults').classList.add('hidden'); runEngine(); }
+}
+async function runEngine() {
+  if (running) return; running = true;
+  const A = analyze(state.data, state.type);
+  $('#btnRun').disabled = true; $('#btnRun').style.opacity = .6; $('#term').innerHTML = ''; $('#engineResults').classList.add('hidden');
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const st = STEPS.map(() => 'pending');
+  for (let i = 0; i < STEPS.length; i++) {
+    st[i] = 'running'; drawPipeline(st);
+    for (const l of STEPS[i].log) { log(l); await sleep(280); }
+    if (i === 2) A.rows.filter(r => r.sev !== 'En meta').sort((a, b) => a.dev - b.dev).slice(0, 4).forEach(r => log(`Desviación ${r.label}: ${fmt(r.dev, 1)}% [${r.sev}]`, r.sev === 'Crítico' ? 'err' : 'warn'));
+    if (i === 3) { const top = Object.entries(A.cats).sort((a, b) => b[1] - a[1])[0]; if (top && top[1] > 0) log(`Categoría dominante: ${top[0]}`, 'warn'); }
+    st[i] = 'done'; drawPipeline(st);
+  }
+  log(`Análisis completado. Índice de desempeño: ${fmt(A.score, 1)}/100 (${A.status.t})`, 'ok');
+  state.ran = true; showEngineResults(A);
+  $('#btnRun').disabled = false; $('#btnRun').style.opacity = 1; running = false;
+}
+$('#btnRun').onclick = () => { state.ran = false; runEngine(); };
+function showEngineResults(A) {
+  $('#engineResults').classList.remove('hidden');
+  mk('chRadar', { type: 'radar', data: { labels: A.rows.map(r => r.short), datasets: [
+    { label: 'Referencia', data: A.rows.map(() => 100), borderColor: PLOMO_L, backgroundColor: 'rgba(215,219,223,.25)', pointRadius: 0 },
+    { label: 'Actual', data: A.rows.map(r => +r.att.toFixed(1)), borderColor: PINK, backgroundColor: 'rgba(255,105,180,.25)', pointBackgroundColor: PINK } ] },
+    options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }, scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: '#ECEEF0' }, pointLabels: { font: { size: 10 } } } } } });
+  mk('chStages', { type: 'bar', data: { labels: A.stages.map(s => s[0]), datasets: [{ data: A.stages.map(s => +s[1].toFixed(0)), backgroundColor: A.stages.map(s => s[1] > 85 ? CORAL : s[1] > 75 ? '#FFB26B' : PINK_L), borderRadius: 6 }] },
+    options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { min: 0, max: 100, grid: { color: '#F1F2F4' } }, y: { grid: { display: false } } } } });
+  const sorted = [...A.rows].sort((a, b) => a.dev - b.dev);
+  $('#rcaTable').innerHTML = `<thead><tr class="text-left text-xs text-plomo-400 uppercase tracking-wider"><th class="pb-2 pr-3">KPI</th><th class="pb-2 pr-3">Actual</th><th class="pb-2 pr-3">Ref.</th><th class="pb-2 pr-3">Desv.</th><th class="pb-2 pr-3">Severidad</th><th class="pb-2 pr-3">Causa raíz probable</th><th class="pb-2">Confianza</th></tr></thead><tbody>` +
+    sorted.map(r => `<tr class="border-t border-plomo-100"><td class="py-3 pr-3 font-semibold text-plomo-900 whitespace-nowrap">${r.label}</td><td class="pr-3">${fmt(r.value, 1)} <span class="text-xs text-plomo-400">${r.unit}</span></td><td class="pr-3 text-plomo-600">${fmt(r.bench, 1)}</td>
+    <td class="pr-3 font-semibold ${r.dev < -3 ? 'text-coral-600' : 'text-plomo-600'}">${r.dev >= 0 ? '+' : ''}${fmt(r.dev, 1)}%</td><td class="pr-3"><span class="pill" style="${SEV_STYLE[r.sev]}">${r.sev}</span></td>
+    <td class="pr-3 text-plomo-800 min-w-[260px]">${r.sev === 'En meta' ? '<span class="text-plomo-400">Sin desviación relevante</span>' : r.cause}</td>
+    <td class="text-plomo-600 whitespace-nowrap">${r.sev === 'En meta' ? '—' : Math.round(clamp(60 + Math.abs(r.dev), 60, 95)) + '%'}</td></tr>`).join('') + '</tbody>';
+  const worst = sorted.filter(r => r.dev < -3).slice(0, 3), topStage = [...A.stages].sort((a, b) => b[1] - a[1])[0];
+  const ins = [];
+  if (worst.length) ins.push(`<b>Prioridad 1:</b> ${worst[0].label} presenta la mayor brecha (${fmt(Math.abs(worst[0].dev), 1)}% bajo la referencia). ${worst[0].cause}.`);
+  if (worst[1]) ins.push(`<b>Prioridad 2:</b> ${worst[1].label} (${fmt(Math.abs(worst[1].dev), 1)}% de brecha) — ${worst[1].cause}.`);
+  ins.push(`<b>Cuello de botella:</b> la etapa de <b>${topStage[0]}</b> opera a ~${fmt(topStage[1], 0)}% de utilización${topStage[1] > 85 ? ', por encima del umbral saludable del 85%' : ''}.`);
+  ins.push(`<b>Resiliencia:</b> índice ${fmt(A.res.index, 0)}/100. ${A.res.buffer < 75 ? 'El stock de seguridad está por debajo del nivel recomendado para el sector.' : 'El colchón de inventario es adecuado.'}`);
+  if (!worst.length) ins.unshift('<b>Operación saludable:</b> todos los KPIs están dentro de los márgenes del sector.');
+  $('#insights').innerHTML = ins.map(t => `<li class="flex gap-2.5"><span class="mt-1.5 w-2 h-2 rounded-full bg-brand flex-shrink-0"></span><span>${t}</span></li>`).join('');
+}
+
+/* ============== 4. WHAT-IF ============== */
+const SLIDERS = [
+  { k: 'safety', label: 'Stock de seguridad', min: -50, max: 50, desc: 'Variación de los días de cobertura' },
+  { k: 'route', label: 'Reducción de tiempos de ruta', min: 0, max: 30, desc: 'Optimización de rutas y consolidación' },
+  { k: 'staff', label: 'Dotación de personal', min: -30, max: 30, desc: 'Cambio de headcount operativo' },
+  { k: 'auto', label: 'Automatización / WMS', min: 0, max: 50, desc: 'Intensidad de adopción tecnológica' },
+  { k: 'supplier', label: 'Reducción de lead time de proveedores', min: 0, max: 40, desc: 'Acuerdos, nearshoring, tracking' }
+];
+const PRESETS = {
+  lean: { safety: -15, route: 15, staff: 0, auto: 20, supplier: 15 },
+  resil: { safety: 30, route: 10, staff: 10, auto: 10, supplier: 20 },
+  cut: { safety: -30, route: 0, staff: -15, auto: 0, supplier: 0 },
+  reset: { safety: 0, route: 0, staff: 0, auto: 0, supplier: 0 }
+};
+function buildSliders() {
+  $('#sliders').innerHTML = SLIDERS.map(s => `<div><div class="flex justify-between items-baseline mb-2"><label class="text-sm font-semibold text-plomo-900" for="s_${s.k}">${s.label}</label><span class="text-sm font-extrabold text-brand-600" id="v_${s.k}"></span></div>
+    <input type="range" id="s_${s.k}" data-k="${s.k}" min="${s.min}" max="${s.max}" step="1" value="0"><div class="text-[11px] text-plomo-400 mt-1.5">${s.desc}</div></div>`).join('');
+  $$('#sliders input').forEach(i => i.addEventListener('input', () => { sim[i.dataset.k] = +i.value; renderSim(); }));
+  $$('[data-preset]').forEach(b => b.onclick = () => { sim = { ...PRESETS[b.dataset.preset] }; renderSim(); });
+}
+function renderSim() {
+  SLIDERS.forEach(s => { $('#s_' + s.k).value = sim[s.k]; $('#v_' + s.k).textContent = (sim[s.k] > 0 ? '+' : '') + sim[s.k] + '%'; });
+  const base = state.data, proj = project(base, sim), b = BENCH[state.type];
+  const A0 = analyze(base, state.type), A1 = analyze(proj, state.type);
+  $('#simBase').textContent = fmt(A0.score, 1); $('#simProj').textContent = fmt(A1.score, 1);
+  const ds = A1.score - A0.score;
+  $('#simDelta').textContent = (ds >= 0 ? '▲ +' : '▼ ') + fmt(ds, 1); $('#simDelta').style.color = ds >= 0 ? '#E5509C' : '#E64F4F';
+  const save = (base.cost - proj.cost) * base.orders * 12;
+  $('#simSave').textContent = (save >= 0 ? '+' : '−') + '$' + fmt(Math.abs(save), 0); $('#simSave').style.color = save >= 0 ? '#E5509C' : '#E64F4F';
+  $('#simSaveNote').textContent = `Costo/orden: $${fmt(base.cost, 2)} → $${fmt(proj.cost, 2)}`;
+  $('#simCards').innerHTML = KPIS.map(f => {
+    const v0 = base[f.k], v1 = proj[f.k], ch = (v1 - v0) / (v0 || 1) * 100;
+    const better = f.hib ? v1 > v0 : v1 < v0, same = Math.abs(ch) < 0.05;
+    return `<div class="card p-3.5"><div class="text-[11px] text-plomo-400 font-semibold uppercase tracking-wider">${f.label}</div>
+      <div class="text-xl font-extrabold text-plomo-900 mt-1">${fmt(v1, 1)}<span class="text-[11px] font-medium text-plomo-400 ml-1">${f.unit}</span></div>
+      <div class="text-[11px] mt-1 font-semibold" style="color:${same ? '#8B959E' : better ? '#E5509C' : '#E64F4F'}">${same ? '— sin cambio' : (ch > 0 ? '▲ +' : '▼ ') + fmt(ch, 1) + '%'} <span class="font-normal text-plomo-400">vs ${fmt(v0, 1)}</span></div></div>`;
+  }).join('');
+  mk('chSim', { type: 'bar', data: { labels: KPIS.map(f => f.short), datasets: [
+    { label: 'Base', data: KPIS.map(f => +attOf(f, base[f.k], b[f.k], false).toFixed(1)), backgroundColor: PLOMO_L, borderRadius: 5 },
+    { label: 'Proyectado', data: KPIS.map(f => +attOf(f, proj[f.k], b[f.k], false).toFixed(1)), backgroundColor: PINK, borderRadius: 5 } ] },
+    options: { maintainAspectRatio: false, animation: { duration: 350 }, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }, scales: { y: { grid: { color: '#F1F2F4' }, title: { display: true, text: '% vs referencia' } }, x: { grid: { display: false } } } } });
+}
+
+/* ============== 5. INFORME ============== */
+function renderReport(A) {
+  const d = state.data, type = state.type, today = new Date().toLocaleDateString('es', { dateStyle: 'long' });
+  const sorted = [...A.rows].sort((a, b) => a.dev - b.dev);
+  const probs = sorted.filter(r => r.dev < -3), ok = A.rows.filter(r => r.dev >= -3), crit = A.rows.filter(r => r.sev === 'Crítico' || r.sev === 'Alto');
+  const resLabel = A.res.index >= 85 ? 'alta' : A.res.index >= 70 ? 'moderada' : 'baja (cadena frágil ante disrupciones)';
+  const pr = project(d, sim), hasSim = Object.values(sim).some(v => v !== 0), A1 = analyze(pr, type);
+  const annual = d.orders * 12;
+  const costGap = Math.max(0, (d.cost - A.b.cost) * annual);
+  const summary = `La operación logística de tipo <b>${type}</b>, con un volumen de <b>${fmt(d.orders, 0)} órdenes mensuales</b>, alcanza un índice de desempeño de <b>${fmt(A.score, 0)}/100</b>, clasificado como <b>${A.status.t.toLowerCase()}</b>. ${ok.length} de 8 indicadores cumplen la referencia del sector${probs.length ? `, mientras que ${probs.length} presentan brechas, ${crit.length} de ellas de severidad alta o crítica` : ''}. ${probs.length ? `La principal oportunidad se concentra en <b>${probs[0].label.toLowerCase()}</b>${probs[1] ? ` y <b>${probs[1].label.toLowerCase()}</b>` : ''}.` : 'Se recomienda sostener las prácticas actuales y buscar mejora continua.'} ${costGap > 0 ? `El sobrecosto anualizado frente a la referencia de costo por orden se estima en <b>$${fmt(costGap, 0)}</b>.` : ''}`;
+  const rows = A.rows.map(r => `<tr><td><b>${r.label}</b></td><td>${fmt(r.value, 1)} ${r.unit}</td><td>${fmt(r.bench, 1)}</td><td style="color:${r.dev < -3 ? '#E64F4F' : '#5B6670'};font-weight:600">${r.dev >= 0 ? '+' : ''}${fmt(r.dev, 1)}%</td><td><span class="pill" style="${SEV_STYLE[r.sev]}">${r.sev}</span></td></tr>`).join('');
+  const findings = probs.length ? probs.slice(0, 4).map(r => `<li style="margin-bottom:.45rem"><b>${r.label}:</b> ${fmt(r.value, 1)} ${r.unit} frente a ${fmt(r.bench, 1)} de referencia (${fmt(Math.abs(r.dev), 1)}% de brecha). Causa raíz probable: ${r.cause.charAt(0).toLowerCase() + r.cause.slice(1)}.</li>`).join('') : '<li>No se detectan brechas relevantes.</li>';
+  const topStage = [...A.stages].sort((a, b) => b[1] - a[1])[0];
+  const alerts = crit.length ? crit.sort((a, b) => a.dev - b.dev).map(r => `<div style="display:flex;gap:.6rem;padding:.65rem .8rem;border-radius:.6rem;background:${r.sev === 'Crítico' ? '#FFF1F1' : '#FFF7ED'};margin-bottom:.5rem;font-size:.88rem"><span style="color:${r.sev === 'Crítico' ? '#E64F4F' : '#D9731C'};font-weight:700">${r.sev.toUpperCase()}</span><span><b>${r.label}</b> — ${fmt(Math.abs(r.dev), 1)}% por debajo de la meta del sector.</span></div>`).join('') : '<p>Sin alertas de severidad alta o crítica.</p>';
+  const horizon = ['0–30 días', '31–60 días', '61–90 días'];
+  const planRows = probs.length ? probs.slice(0, 3).flatMap((r, ri) => ACTIONS[r.k].map((a, i) => ({ h: horizon[i], k: r.label, a, p: ri === 0 ? 'Alta' : ri === 1 ? 'Media-alta' : 'Media' })))
+    .sort((a, b) => horizon.indexOf(a.h) - horizon.indexOf(b.h)).map(x => `<tr><td>${x.h}</td><td><b>${x.k}</b></td><td>${x.a}</td><td>${x.p}</td></tr>`).join('')
+    : '<tr><td colspan="4">Mantener el seguimiento mensual de KPIs y auditorías de calidad.</td></tr>';
+  $('#reportDoc').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;border-bottom:3px solid #FF69B4;padding-bottom:1.1rem">
+      <div><div style="font-weight:800;font-size:1.5rem;color:#22282D;letter-spacing:-.02em">LOGIX<span style="color:#FF69B4">-AI</span></div><div style="font-size:.72rem;color:#8B959E;letter-spacing:.12em;text-transform:uppercase">Logistics Intelligence &amp; Quality Excellence Hub</div></div>
+      <div style="text-align:right;font-size:.82rem;color:#5B6670"><div style="font-weight:700;color:#22282D">Informe ejecutivo de desempeño logístico</div><div>${today}</div><div>Sector: ${type}</div></div>
+    </div>
+    <h2 style="margin-top:1.5rem">1. Resumen ejecutivo</h2>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin:.4rem 0 1rem">
+      <div style="flex:1;min-width:150px;background:#FFF1F8;border-radius:.8rem;padding:.9rem 1rem"><div style="font-size:.7rem;color:#C23B83;font-weight:700;text-transform:uppercase">Índice de desempeño</div><div style="font-size:1.9rem;font-weight:800;color:#22282D">${fmt(A.score, 0)}<span style="font-size:.9rem;color:#8B959E">/100</span></div><div style="font-size:.8rem;font-weight:600;color:${A.status.c}">${A.status.t}</div></div>
+      <div style="flex:1;min-width:150px;background:#F6F7F8;border-radius:.8rem;padding:.9rem 1rem"><div style="font-size:.7rem;color:#5B6670;font-weight:700;text-transform:uppercase">Resiliencia</div><div style="font-size:1.9rem;font-weight:800;color:#22282D">${fmt(A.res.index, 0)}<span style="font-size:.9rem;color:#8B959E">/100</span></div><div style="font-size:.8rem;color:#5B6670">${A.res.index >= 85 ? 'Alta' : A.res.index >= 70 ? 'Moderada' : 'Baja'}</div></div>
+      <div style="flex:1;min-width:150px;background:#F6F7F8;border-radius:.8rem;padding:.9rem 1rem"><div style="font-size:.7rem;color:#5B6670;font-weight:700;text-transform:uppercase">Alertas activas</div><div style="font-size:1.9rem;font-weight:800;color:${crit.length ? '#E64F4F' : '#22282D'}">${crit.length}</div><div style="font-size:.8rem;color:#5B6670">alta / crítica</div></div>
+    </div>
+    <p>${summary}</p>
+    <h2>2. Indicadores clave</h2>
+    <table><thead><tr><th>Indicador</th><th>Actual</th><th>Referencia</th><th>Desviación</th><th>Severidad</th></tr></thead><tbody>${rows}</tbody></table>
+    <h2>3. Hallazgos principales</h2>
+    <ul style="padding-left:1.1rem;font-size:.93rem;line-height:1.65;list-style:disc">${findings}</ul>
+    <p style="margin-top:.6rem">El análisis de flujo identifica a la etapa de <b>${topStage[0].toLowerCase()}</b> como el punto de mayor presión operativa (~${fmt(topStage[1], 0)}% de utilización estimada)${topStage[1] > 85 ? ', por encima del umbral recomendado de 85%' : ''}.</p>
+    <h2>4. Evaluación de resiliencia de la cadena</h2>
+    <p>La resiliencia global es <b>${resLabel}</b> (${fmt(A.res.index, 0)}/100). Se compone de: colchón de inventario (${fmt(A.res.buffer, 0)}/100, con ${fmt(d.safety, 1)} días de cobertura frente a ${fmt(A.b.safety, 1)} de referencia), confiabilidad del abastecimiento (${fmt(A.res.supply, 0)}/100), estabilidad de la fuerza laboral (${fmt(A.res.people, 0)}/100) y nivel de servicio (${fmt(A.res.service, 0)}/100). ${A.res.index < 70 ? 'Una disrupción de proveedores o un pico de demanda tendría impacto directo en el nivel de servicio.' : 'La cadena muestra capacidad razonable para absorber variaciones moderadas.'}</p>
+    <h2>5. Alertas de riesgo</h2>${alerts}
+    <h2>6. Plan de acción correctivo (90 días)</h2>
+    <table><thead><tr><th style="width:90px">Horizonte</th><th>KPI objetivo</th><th>Acción</th><th style="width:90px">Prioridad</th></tr></thead><tbody>${planRows}</tbody></table>
+    <h2>7. Impacto proyectado del escenario simulado</h2>
+    ${hasSim ? `<p>El escenario configurado en el simulador (stock de seguridad ${sim.safety > 0 ? '+' : ''}${sim.safety}%, rutas −${sim.route}%, dotación ${sim.staff > 0 ? '+' : ''}${sim.staff}%, automatización ${sim.auto}%, lead time de proveedores −${sim.supplier}%) llevaría el índice de <b>${fmt(A.score, 1)}</b> a <b>${fmt(A1.score, 1)}</b>, con OTIF de ${fmt(pr.otif, 1)}%, errores de ${fmt(pr.error, 2)}% y costo por orden de $${fmt(pr.cost, 2)}. Variación anual estimada de costos: <b>${(d.cost - pr.cost) >= 0 ? 'ahorro' : 'incremento'} de $${fmt(Math.abs((d.cost - pr.cost) * annual), 0)}</b>.</p>`
+      : '<p>No hay un escenario activo. Configura variables en el <b>Simulador What-If</b> para incorporar aquí el impacto proyectado de las decisiones.</p>'}
+    <p style="margin-top:1.8rem;font-size:.75rem;color:#8B959E;border-top:1px solid #ECEEF0;padding-top:.8rem">Informe generado automáticamente por LOGIX-AI. Las referencias sectoriales y elasticidades del simulador son parámetros demostrativos y deben calibrarse con los datos históricos de la empresa.</p>`;
+}
+$('#btnPrint').onclick = () => window.print();
+
+/* ============== INIT ============== */
+buildInputs(); buildSliders(); showView('dashboard');
+</script>
+</body>
+</html>
